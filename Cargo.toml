@@ -1,7 +1,5 @@
 [workspace]
-members = [
-    "programs/*"
-]
+members = ["programs/oridion"]
 resolver = "2"
 
 [profile.release]
