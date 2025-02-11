@@ -2,26 +2,7 @@ use anchor_lang::prelude::*;
 use super::*;
 
 ///------------------------------------------------------------//
-/// COMET PDA
-/// Created by users.
-/// Creator must submit a unique 4-digit code for each comet created.
-/// User creates a comet which will transcend through stars for a various amount of hops
-/// before ending at a destination address.
-/// - id
-/// - creator
-/// - created
-/// - pda
-/// - bump
-/// - deposit
-/// - destination
-/// - hops
-/// - hops_completed
-/// - last_updated
-///
-/// useful for later
-/// new anchor.BN(0).toArrayLike(Buffer)
-/// https://stackoverflow.com/questions/71807112/how-to-derive-pdas-with-multiple-seeds-in-anchor-rust
-///
+/// DEPOSIT PDA
 ///------------------------------------------------------------//
 #[derive(Accounts)]
 pub struct CreateDeposit<'info> {
@@ -49,10 +30,6 @@ pub struct CreateDeposit<'info> {
 }
 
 
-// Create new deposit data account
-// Todo: Missing activity and processing
-// activity - '[{"action": "D", "to": "BABALO", "time": "1711686392", "signature": "2Cems9LQFpDJaE21m4Hfiyr8BPdDmeeMVQJGpuFAU4XoSXGqnTep2AJiqyQrJPbDSBwDVT5ZQ9bpqi3HRXZ9vy4x"}, {"action": "HP", "to": "VREDIA", "time": 1711686438, "signature": "5Zwyi1sDZR5nPgYf4G7wBaZeYqoHCrB84d15B3rjuTTGV3mtdLfHufV6vvFusWqrEN6UtdaLuvGiphqqSLGnESzW"}]',
-// processing - removed, not sure if we are going to need this.
 #[account]
 #[derive(InitSpace)]
 pub struct Deposit {
@@ -71,10 +48,6 @@ pub struct Deposit {
     pub destination: Pubkey //Destination wallet address
 }
 
-//Constrain = The "creator public key" being passed during this update
-//must match the "creator" field already set in the data of the comet account when initialized
-//Try to use this for HOP and DESTINATION RETRIEVAL FUNDS
-//Hope to planet will always go from planet to planet
 #[derive(Accounts)]
 pub struct PlanetHop<'info> {
     #[account(mut)]
@@ -98,48 +71,6 @@ pub struct WithdrawAccounts<'info> {
     #[account(mut, address = MANAGER_PUBKEY)]
     pub manager: Signer<'info>
 }
-
-
-
-// // V2 - 5 PLANET SPREAD HOP
-// #[derive(Accounts)]
-// pub struct PlanetShotGunStart<'info> {
-//     #[account(mut)]
-//     pub from_planet: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet_1: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet_2: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet_3: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet_4: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet_5: Account<'info,Planet>,
-//     #[account(mut, address = MANAGER_PUBKEY)]
-//     pub manager: Signer<'info>
-// }
-//
-//
-// //Return from stars to destination planet
-// #[derive(Accounts)]
-// pub struct PlanetShotGunEnd<'info> {
-//     #[account(mut)]
-//     pub from_planet_1: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub from_planet_2: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub from_planet_3: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub from_planet_4: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub from_planet_5: Account<'info,Planet>,
-//     #[account(mut)]
-//     pub to_planet: Account<'info,Planet>,
-//     #[account(mut, address = MANAGER_PUBKEY)]
-//     pub manager: Signer<'info>
-// }
-
 
 
 //Star hop from Planet to Split stars

@@ -7,16 +7,13 @@ pub const UNIVERSE_PDA_SEED: &[u8] = b"_x_ORIDION_x_";
 pub const PLANET_PDA_SEED_PRE: &[u8] = b"_PLA_";
 pub const PLANET_PDA_SEED_POST: &[u8] = b"_NET_";
 
-
 //CREATE DEPOSIT SEED
 pub const DEPOSIT_PDA_SEED_PRE: &[u8] = b"_DEPOSIT_";
 pub const DEPOSIT_PDA_SEED_POST: &[u8] = b"_TRAVEL_";
 
-//Constants for Star seed
 pub const STAR_SEED_PRE: &[u8] = b"_ST_";
 pub const STAR_SEED_POST: &[u8] = b"_AR_";
 
-/// Constants for sizing properties.
 pub  const DISCRIMINATOR_LENGTH: usize = 8;
 pub const PUBLIC_KEY_LENGTH: usize = 32;
 

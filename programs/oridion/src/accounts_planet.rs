@@ -4,22 +4,6 @@ use super::*;
 
 ///-------------------------------------------------------------//
 /// PLANETS PDA
-/// SEED - name to bytes
-/// https://solana.stackexchange.com/questions/2840/best-ways-to-store-long-string-as-pda-seed
-/// https://github.com/0xShuk/String-as-PDA/blob/main/lib.rs
-///
-/// NINE PLANETS
-/// - ORNOPU
-/// - DORAZ
-/// - ANDORA
-/// - JEBU
-/// - BABALO
-/// - KOYOPA
-/// - VREDIA
-/// - BURU
-/// - ZENOS
-/// - ISOMA
-/// ["ORNOPU","DORAZ","ANDORA","JEBU","BABALO","KOYOPA","VREDIA","BURU","ZENOS","ISOMA"]
 ///-------------------------------------------------------------//
 #[derive(Accounts)]
 #[instruction(name: String)]
@@ -45,7 +29,6 @@ pub struct CreatePlanet<'info> {
 }
 
 
-//1593840 is the minimum amount needed for planets to exist
 #[derive(Accounts)]
 pub struct DeletePlanet<'info> {
     #[account(mut, close = creator, constraint = &planet.to_account_info().lamports() <= &1593840)]

@@ -49,7 +49,6 @@ pub mod oridion {
         universe.wfe = 0; //Withdraw Lamports (0) - no withdraw fee - Starts at .0 cents (when solana is $100 per 1)
         let(pda, _bump_seed) = Pubkey::find_program_address(&[UNIVERSE_PDA_SEED], &ctx.program_id);
         universe.pda = pda;
-        //msg!("== BIG BANG! ==");
         Ok(())
     }
 
@@ -65,7 +64,6 @@ pub mod oridion {
         universe.hsfe2 = hop_star_fee2 as u64; //Lamports
         universe.hsfe3 = hop_star_fee3 as u64; //Lamports
         universe.wfe = withdraw_fee as u64; //Lamports
-        //msg!("== FEE UPDATED ==");
         Ok(())
     }
 
@@ -96,8 +94,7 @@ pub mod oridion {
     pub fn delete_planet(ctx: Context<DeletePlanet>) -> Result<()> {
         let planet_lamports = ctx.accounts.planet.get_lamports();
 
-        //ERROR! PLANET HAS MONEY STILL IN IT! (1593840 == empty planet) 1593840
-        //msg!("Error deleting planet | Lamports: {}", planet_lamports.to_string());
+        //ERROR! PLANET HAS SOL! (1593840 == empty planet) 1593840
         require!(planet_lamports <= 1593840, OridionError::PlanetDeleteHasFundsError);
 
         //Remove planet from universe list
@@ -105,7 +102,6 @@ pub mod oridion {
         let planet: &mut Account<Planet> = &mut ctx.accounts.planet;
         universe.p.retain(|x| x != &planet.name);
         //msg!("== PLANET {} DELETED ==", planet.name.to_string());
-        //msg!("== PLANET DELETED ==");
         Ok(())
     }
 
@@ -118,8 +114,6 @@ pub mod oridion {
     ///-------------------------------------------------------------------///
     pub fn create_deposit(ctx: Context<CreateDeposit>,deposit_lamports: u64, mode: u8, delay: u32, withdraw_at: i64 ) -> Result<()> {
 
-        //msg!("Deposit: {} Lamports", deposit_lamports);
-
         let clock: Clock = Clock::get().unwrap();
         let now = clock.unix_timestamp;
         //msg!("Now Timestamp: {}", now.to_string());
@@ -128,7 +122,6 @@ pub mod oridion {
         let deposit_account: &mut Account<Deposit> = &mut ctx.accounts.deposit;
         let destination: &AccountInfo = ctx.accounts.destination.as_ref();
 
-        //deposit_account.creator = &ctx.accounts.creator;
         deposit_account.created_at = now;
         deposit_account.last_process_at = now;
         deposit_account.hops = 2;
@@ -138,18 +131,6 @@ pub mod oridion {
         deposit_account.delay = delay;
         deposit_account.withdraw_at = withdraw_at;
         deposit_account.destination = *destination.key; //Destination must be set.
-
-        // Realized that destination must be set. Otherwise, it will not be trusted as Oridion can
-        // Dictate the withdrawal address at any time. This is not safe to the user.
-        // User should know Oridion can not decide or change where to send the funds.
-
-        //Get the destination and set the deposit destination if the destination account was found.
-        // let destination: Option<&SystemAccount> = ctx.accounts.destination.as_ref();
-        // if let Some(destination_account) = destination {
-        //     // Set `deposit_account.destination` to the public key of `destination`
-        //     deposit_account.destination = *destination_account.key;
-        // }
-
 
         //Depending on the withdrawal timestamp, set the next process and hop process timestamp
         if (now + 180) > withdraw_at {
@@ -192,29 +173,12 @@ pub mod oridion {
         //msg!("Hopping from galaxy to {}", planet_account.name);
         ctx.accounts.planet.add_lamports(deposit_lamports)?;
         ctx.accounts.universe.sub_lamports(deposit_lamports)?;
-        //msg!("Deposit and initial hop completed");
         Ok(())
     }
 
-    // //Emergency extract lamports from planet
-    // pub fn withdraw_orbit(ctx: Context<RetractOrbit>, deposit_lamports: u64 ) -> Result<()> {
-    //
-    //     let planet: &mut Account<Planet> = &mut ctx.accounts.planet;
-    //
-    //     //VALIDATION
-    //     let current_from_lamports_balance: u64 = planet.get_lamports();
-    //     require!(current_from_lamports_balance > deposit_lamports, OridionError::PlanetNotEnoughFundsError);
-    //
-    //     // TRANSACTION - Transfer to destination
-    //     ctx.accounts.destination.add_lamports(deposit_lamports)?;
-    //     ctx.accounts.planet.sub_lamports(deposit_lamports)?;
-    //
-    //     Ok(())
-    // }
 
     ///-------------------------------------------------------------------///
     /// HOP FROM Planet to Planet
-    /// The "to planet" validation is not needed because the user signs the transaction
     /// -------------------------------------------------------------------///
     pub fn planet_hop(ctx: Context<PlanetHop>) -> Result<()>{
 
@@ -237,18 +201,10 @@ pub mod oridion {
         ctx.accounts.to_planet.add_lamports(deposit.lamports)?;
         ctx.accounts.from_planet.sub_lamports(deposit.lamports)?;
 
-        //msg!("Planet hop completed");
         Ok(())
     }
 
-    /// WITHDRAW COMET FUNDS TO FINAL DESTINATION. 
-    /// - THIS ONLY HANDLES THE TRANSACTION FROM PLANET TO FINAL USER WALLET. 
-    /// - This is just like planet hop except deliver to destination wallet
-    /// Because we must pass the destination wallet address in accounts,
-    /// There are no validation checks from `deposit.destination` to passed destination account
-    /// needed, and there is no way to just
-    /// skip passing withdraw account and just using stored withdraw account
-    /// on the deposit account.
+    /// WITHDRAW COMET FUNDS TO FINAL DESTINATION.
     pub fn withdraw(ctx: Context<WithdrawAccounts>) -> Result<()> {
 
         //Get deposit account to determine how much to withdraw
@@ -270,8 +226,6 @@ pub mod oridion {
         ctx.accounts.deposit.sub_lamports(deposit_remaining_lamports)?;
         ctx.accounts.manager.add_lamports(deposit_remaining_lamports)?;
 
-        //We need to close out the deposit account.
-        //msg!("Withdraw completed");
         Ok(())
     }
 
@@ -283,16 +237,12 @@ pub mod oridion {
 
         // Deposit account
         let deposit: &mut Account<Deposit> = &mut ctx.accounts.deposit;
-
-        //let clock: Clock = Clock::get().unwrap();
         let manager: &Signer = &ctx.accounts.manager;
         let star1: &mut Account<Star> = &mut ctx.accounts.star_one;
         let star2: &mut Account<Star> = &mut ctx.accounts.star_two;
-        //let from_planet_name: String = from.name.to_owned();
 
         // IMPORTANT VALIDATION: STAR ONE AND TWO CANNOT BE THE SAME
         require!(star_one != star_two, OridionError::HopErrorStarsMustBeUnique);
-
 
         //msg!("Validation successful");
         let percent: f32 = get_random_percent();
@@ -302,9 +252,6 @@ pub mod oridion {
         //msg!("Hopping to Star 2: {}", star_two_amount.to_string());
 
         //Make sure the addition of split amounts are equal to deposit
-        // if star_one_amount + star_two_amount != deposit.lamports {
-        //     return Err(errors::ErrorCode::StarHopCalculationError.into())
-        // }
         require!(star_one_amount + star_two_amount == deposit.lamports, OridionError::StarHopCalculationError);
 
         //Set amounts to accounts
@@ -313,10 +260,7 @@ pub mod oridion {
         star1.manager = *manager.key;
         star2.manager = *manager.key;
 
-        //----------------------------------------///
         // TRANSACTION
-        // Transfer from planet to star one and two
-        //----------------------------------------///
         ctx.accounts.star_one.add_lamports(star_one_amount)?;
         ctx.accounts.star_two.add_lamports(star_two_amount)?;
         ctx.accounts.from_planet.sub_lamports(deposit.lamports)?;
@@ -333,7 +277,6 @@ pub mod oridion {
         let deposit: &mut Account<Deposit> = &mut ctx.accounts.deposit;
 
         let to: &mut Account<Planet> = &mut ctx.accounts.to_planet;
-        //let to_planet_name: String = to.name.to_owned();
         let star1: &mut Account<Star> = &mut ctx.accounts.star_one;
         let star2: &mut Account<Star> = &mut ctx.accounts.star_two;
         let star_one_amount: u64 = star1.amount.clone();
@@ -361,8 +304,6 @@ pub mod oridion {
         //msg!("Hop from two stars to {} complete", to_planet_name);     
         //msg!("Hop from two stars to planet complete");     
 
-        // EXPLODE STARS
-        //msg!("Destroying stars");
         //Transfer out remaining lamports
         let star_one_remaining_lamports = ctx.accounts.star_one.get_lamports();
         let star_two_remaining_lamports = ctx.accounts.star_two.get_lamports();
@@ -372,7 +313,6 @@ pub mod oridion {
         ctx.accounts.star_two.sub_lamports(star_two_remaining_lamports)?;
         ctx.accounts.manager.add_lamports(star_two_remaining_lamports)?;
 
-        //msg!("Star hop 2 completed!");
         Ok(())
     }
 
@@ -395,7 +335,6 @@ pub mod oridion {
 
         // IMPORTANT VALIDATION: STAR ONE AND TWO CANNOT BE THE SAME
         require!(star_one != star_two && star_two != star_three && star_one != star_three, OridionError::HopErrorStarsMustBeUnique);
-        //msg!("Validation successful");
 
         let first_split_percent: f32 = get_random_percent();
         let second_split_percent: f32 = 100f32 - first_split_percent;
@@ -473,17 +412,13 @@ pub mod oridion {
         //msg!("Star 2: {}", star_two_amount.to_string());
         //msg!("Star 3: {}", star_three_amount.to_string());
 
-        // TRANSACTIONS
-        // Transaction from stars one and two to destination planet
+        // Transactions
         ctx.accounts.star_one.sub_lamports(star_one_amount)?;
         ctx.accounts.star_two.sub_lamports(star_two_amount)?;
         ctx.accounts.star_three.sub_lamports(star_three_amount)?;
         ctx.accounts.to_planet.add_lamports(deposit.lamports)?;
         //msg!("Hop to {} complete", to_planet_name);
-        //msg!("Hop to planet complete");
 
-        // EXPLODE STARS
-        //msg!("Destroying stars");
         //Transfer out remaining lamports
         let star_one_remaining_lamports = ctx.accounts.star_one.get_lamports();
         let star_two_remaining_lamports = ctx.accounts.star_two.get_lamports();
@@ -497,7 +432,6 @@ pub mod oridion {
         ctx.accounts.manager.add_lamports(star_three_remaining_lamports)?;
         ctx.accounts.star_three.sub_lamports(star_three_remaining_lamports)?;
 
-        //msg!("Star Hop 3 completed");
         Ok(())
     }
 }

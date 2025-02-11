@@ -28,7 +28,6 @@ pub struct UpdateUniverseFee<'info> {
     pub creator: Signer<'info>
 }
 
-//For privacy, we do not know how many comets are in the universe.
 #[account]
 pub struct Universe {
     pub pda: Pubkey, //PDA
